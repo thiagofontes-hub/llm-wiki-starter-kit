@@ -1,0 +1,120 @@
+<!--
+TEMPLATE: templates/handover.md.template
+RENDERS TO: .claude/handover.md
+TOKENS: {{PROJECT_NAME}}, {{LIBRARIAN_ROLE}}, {{ENTRY_NOUN}}, {{ENTRY_NOUN_PLURAL}}, {{ENTRY_DIR}}, {{SOURCE_DIR}}, {{PROCESSED_DIR}}, {{DATE_TODAY}}, {{SEARCH_CMD}}
+Delete this comment block when instantiating.
+
+This file is rewritten in full at the end of every session (Phase 5, step 5 — or by
+`/end-session`). Square-bracketed text is guidance: replace it, do not keep it.
+The last two sections — "Conventions (locked in)" and "Key files" — are stable.
+Carry them forward verbatim unless a convention actually changed.
+-->
+
+# Handover — {{LIBRARIAN_ROLE}}
+
+Written {{DATE_TODAY}} (session 1, initial setup). Read this at the start of every session, before anything else.
+
+---
+
+## IMMEDIATE NEXT TASK
+
+[One specific sentence naming the actual next action. Name files, counts and the phase to start at. "Continue ingesting" is not acceptable.]
+
+[Example: Run the pilot ingest on `{{SOURCE_DIR}}/<exact-filename>.md` (820 words) — full five phases, one source only, then review the output with the owner before batching.]
+
+## WARNING — incomplete ingestion
+
+[Delete this whole section if the last session finished Phase 5 cleanly. Otherwise state exactly what is half-done, because it must be repaired before any new batch: which phase stopped, which files were written, which of the six Phase 5 steps did not run. An unintegrated batch leaves orphan pages that nothing links to — fix it first.]
+
+## What was done last session
+
+[Session N, batch M. What went in and what came out.]
+
+- Sources ingested: [n — list each filename with the number of {{ENTRY_NOUN_PLURAL}} it yielded, including the zero-yield ones and why]
+- New {{ENTRY_NOUN_PLURAL}}: [n] · new source summaries: [n] · topic hubs touched: [list]
+- Decisions worth remembering: [entries dropped and why, merges rejected, tensions flagged, triage moves]
+- Phase 5 status: [index.md / log.md / hubs / originals moved / handover / search re-indexed — all done, or name the gap]
+
+## Current wiki state
+
+```text
+wiki/
+├── index.md         ← [n] {{ENTRY_NOUN_PLURAL}} / [n] sources / [n] topics
+├── log.md           ← [n] entries, latest [YYYY-MM-DD]
+├── {{ENTRY_DIR}}/   ← [n] files
+├── topics/          ← [n] files
+└── sources/         ← [n] files
+```
+
+Backlog: [n] files in `{{SOURCE_DIR}}/` · [n] in `{{PROCESSED_DIR}}/` · [n] triaged out (`raw-index-pages/`, `raw-oversized/`).
+
+## If this is a new machine
+
+The search index is machine-local (`~/.cache/qmd/`), is never committed, and bakes in absolute paths. Rebuild it before doing anything else. Full procedure in `resources/docs/04-search-setup-qmd.md`.
+
+```sh
+{{SEARCH_CMD}} --version                    # install first if missing
+{{SEARCH_CMD}} collection list              # both collections present? if yes, skip to update
+{{SEARCH_CMD}} update                       # build the keyword index
+{{SEARCH_CMD}} embed                        # first run downloads a ~318 MB model; 10–20 min for a few hundred files
+{{SEARCH_CMD}} status                       # confirm: both collections, 0 pending embeddings
+```
+
+## Unprocessed backlog
+
+Run `bash scripts/unprocessed.sh` for the live list, sorted ascending by word count.
+
+| Group | Files | Notes |
+| --- | --- | --- |
+| [category] | [n] | [why it hangs together; anything known about quality] |
+| Triaged out — `raw-index-pages/` | [n] | Link-index pages, no extractable prose. Not batchable. |
+| Triaged out — `raw-oversized/` | [n] | Need chapter-level splitting first. Excluded from the normal queue. |
+
+### Recommended next batch
+
+[One or two named options, each with file count, word-count tier and the reason it is a good next move — a category it completes, a hub it deepens, a thin entry it would properly ground. Confirm word counts before committing to a batch size; the tier of the longest source sets the batch size.]
+
+## Ingestion pipeline (5 phases)
+
+| Phase | Owner | Job |
+| --- | --- | --- |
+| 1 | `wiki-extractor` (parallel, 1 per source) | Read source + `index.md` → return extraction |
+| 2 | Main agent | Quality review → owner approves |
+| 3 | `wiki-writer` (parallel, 1 per 2–3 sources) | Write files verbatim |
+| 3.5 | `wiki-formatter` (parallel, 1 per 5–7 {{ENTRY_NOUN_PLURAL}}) | Format entry bodies |
+| 4 | `wiki-verifier` (one) | Files exist, non-empty, frontmatter valid, counts match |
+| 5 | Main agent | index, log, hubs, move originals, handover, re-index |
+
+Full detail: `CLAUDE.md` and `resources/docs/02-ingestion-protocol.md`.
+
+## Conventions (locked in)
+
+Stable section — carry forward verbatim.
+
+- **Originals are never modified.** A source is processed when `wiki/sources/{slug}.md` exists; only then does the original move to `{{PROCESSED_DIR}}/`.
+- **Atomic entries only.** One {{ENTRY_NOUN}} per file.
+- **Check `wiki/index.md` before creating anything.** Reinforce an existing entry rather than duplicating it.
+- **Wikilinks are Foam syntax** — `[[filename-without-extension]]` — and may only name slugs that already exist in `index.md`.
+- **First mention in body prose gets the wikilink.**
+- **Frontmatter field names never drift:** `sources:` on entries, `entries_extracted:` on source summaries, `entries:` on topic hubs.
+- **All sources are `.md`.** Convert on arrival.
+- **Log the reasoning, not just the result** — dropped entries, rejected merges, flagged tensions.
+- **One batch per session, and Phase 5 always completes before the session ends.**
+
+## Key files
+
+Stable section — carry forward verbatim.
+
+| File | Purpose |
+| --- | --- |
+| `CLAUDE.md` | Role, constraints, protocol, conventions, search commands |
+| `wiki/CLAUDE.md` | Nested role override for query-time work inside `wiki/` |
+| `wiki/index.md` | Master catalogue — check before creating any page |
+| `wiki/log.md` | Append-at-top history of ingests, queries, lint passes |
+| `.claude/handover.md` | This file — rewritten at the end of every session |
+| `.claude/settings.json` | Search MCP server config — must stay committed |
+| `.claude/agents/` | The four ingestion specialists plus the query-time expert |
+| `.claude/commands/end-session.md` | The session-close ritual (`/end-session`) |
+| `scripts/unprocessed.sh` | Backlog by word count, shortest first |
+| `scripts/lint-wiki.sh` | Wiki health check |
+| `resources/docs/07-lessons-learned.md` | Every failure mode already paid for |

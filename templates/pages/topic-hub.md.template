@@ -1,0 +1,61 @@
+<!--
+TEMPLATE: templates/pages/topic-hub.md.template
+RENDERS TO: wiki/topics/<slug>.md — one file per theme
+TOKENS: {{ENTRY_NOUN_PLURAL}}
+Skeleton for hand-creating a topic hub. Hubs are always written and maintained by the librarian
+(Phase 5), never by a sub-agent, so this skeleton is the working template rather than a fallback.
+Copy the file, then delete this comment block — the `---` must be the first line of the finished
+page, or the frontmatter will not parse.
+-->
+---
+title: "[Topic name in title case]"
+tags: [tag-one, tag-two]
+entries: ["[[entry-one]]", "[[entry-two]]", "[[entry-three]]"]
+sources: ["[[source-one]]", "[[source-two]]"]
+---
+
+# [Topic name — same wording as the title field]
+
+[2–4 sentences stating the claim this hub makes about the topic. Not "this page collects entries
+about X" — say what the topic is actually about and why the pieces belong together.]
+
+## [First move in the argument, named for the move and not for an entry]
+
+[Prose. Introduce [[entry-one]] on first mention and say what job it does in the argument, then
+carry the thread into the next idea. The reader should be able to follow this section without
+opening a single link.]
+
+## [Second move — the mechanism, the failure mode, or the counter-position]
+
+[More prose, wiring in [[entry-two]] and [[entry-three]]. Where two entries genuinely disagree,
+say so and leave the tension open; a hub that silently picks a winner destroys information.]
+
+## [How the pieces fit together]
+
+[Short closing section that traces the loop: which entry leads to which, and what a reader should
+do with the topic as a whole.]
+
+## See also
+
+- [[sibling-topic]] — [what that hub covers that this one deliberately leaves out]
+
+<!--
+RULES FOR THIS PAGE TYPE
+
+- A hub is an argument, not a link list. A page that only lists links adds nothing over
+  `wiki/index.md` and should not exist.
+- Every slug in `entries:` must appear somewhere in the body prose, and every entry wikilinked in
+  the body must appear in `entries:`. Adding a slug to the frontmatter is not integration.
+- Phase 5 of every ingest wires the batch's new entries into the prose of the hubs they belong to.
+  If an entry cannot be woven into any existing argument, that is the signal to consider a new hub.
+- Name `##` sections after the move they make in the argument, not after the entries they contain.
+- Hubs link sideways to other hubs under `## See also`; do not turn that section into a second
+  entry list.
+- Create a new hub when roughly five or more {{ENTRY_NOUN_PLURAL}} cluster with no home. The
+  reference implementation runs 12 hubs across 328 entries — hubs are few and load-bearing.
+- Field name note: this kit uses `entries:`. The reference implementation's files say `concepts:`
+  because its entry noun is "concept"; pick one spelling and never mix them.
+- Hubs are the one page type that may grow long. Prune and rewrite rather than appending forever.
+
+Full schema reference: docs/03-page-schemas.md. Worked example: examples/example-topic-hub.md.
+-->

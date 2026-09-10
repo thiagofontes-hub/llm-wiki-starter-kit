@@ -1,0 +1,58 @@
+<!--
+TEMPLATE: templates/pages/source-summary.md.template
+RENDERS TO: wiki/sources/<slug>.md — one file per ingested source
+TOKENS: {{SOURCE_DIR}}, {{PROCESSED_DIR}}, {{SOURCE_TYPES}}, {{DATE_TODAY}}, {{ENTRY_NOUN_PLURAL}}
+Skeleton for hand-creating a source summary. A normal ingest writes these through the wiki-writer
+agent instead; use this when recording a source outside an ingest, or as the format reference.
+Copy the file, then delete this comment block — the `---` must be the first line of the finished
+page, or the frontmatter will not parse.
+-->
+---
+title: "[Full source title, as published]"
+source_file: "{{SOURCE_DIR}}/exact-filename.md"
+source_type: {{SOURCE_TYPES}}
+date_ingested: {{DATE_TODAY}}
+tags: [tag-one, tag-two]
+entries_extracted: ["[[entry-one]]", "[[entry-two]]"]
+---
+
+## Summary
+
+[2–3 sentences: what the source is, who made it, and what it contributed to the wiki. Note any
+problem with the capture here too — truncated transcript, paywalled tail, images not retrieved.]
+
+## Key Contributions
+
+- **[Entry name]** — [one line on the idea this source uniquely supplied]
+- **[Entry name]** — [one line]
+
+## Entries Reinforced
+
+- [[existing-entry]] — [what this source adds to a page that already existed]
+- [[existing-entry]] — [a candidate idea that was dropped as a near-duplicate belongs here, not
+  in a thin new page]
+
+<!--
+RULES FOR THIS PAGE TYPE
+
+- This page is the record that the source was processed. It must exist before the raw file moves
+  from `{{SOURCE_DIR}}/` to `{{PROCESSED_DIR}}/`, and it is what tells a later session not to
+  ingest the same material twice.
+- `source_file` is the exact filename of the raw source, character for character — odd
+  punctuation, curly apostrophes, capitalisation and all. It is the only link back to the
+  original. Do not tidy it, shorten it or guess it.
+- `source_type` takes exactly one value from {{SOURCE_TYPES}}.
+- Write this page even when the source yielded nothing: leave `entries_extracted` as `[]` and say
+  why in the Summary (stub capture, link-index page, no extractable prose, verbatim duplicate).
+  A missing page makes the source look permanently unprocessed.
+- `entries_extracted` lists only pages actually created for this source, and every slug must exist.
+  Reinforcements and genuine contradictions go under `## Entries Reinforced` instead — record a
+  contradiction there rather than resolving it.
+- The formatter agent never touches source summaries — Phase 3.5 is {{ENTRY_NOUN_PLURAL}} only —
+  so what the writer produces here is final. Get the headings right first time.
+- Field names are fixed: `title`, `source_file`, `source_type`, `date_ingested`, `tags`,
+  `entries_extracted`. The reference implementation says `concepts_extracted:`; this kit does not.
+- Slug: kebab-case, derived from the title rather than from a scraper-generated filename.
+
+Full schema reference: docs/03-page-schemas.md. Worked example: examples/example-source-summary.md.
+-->

@@ -1,0 +1,40 @@
+<!--
+TEMPLATE: templates/wiki/log.md.template
+RENDERS TO: wiki/log.md
+TOKENS: {{PROJECT_NAME}}, {{ENTRY_NOUN_PLURAL}}, {{DATE_TODAY}}, {{SEARCH_CMD}}
+The initialisation entry below is a worked example of the format as well as a real first entry.
+Keep it. New entries go directly under the divider, above it.
+Delete this comment block when instantiating.
+-->
+
+# {{PROJECT_NAME}} wiki log
+
+Append-at-top record of every operation on this wiki. Newest entry immediately below the
+divider. One entry per session, headed exactly:
+
+`## [YYYY-MM-DD] type | description`
+
+Type is one of `ingest`, `query`, `lint`, `maintenance`. That exact heading shape is what makes
+`grep "^## \[" wiki/log.md | head -5` a reliable recent-history check, so do not vary it.
+
+Log the reasoning, not just the result: which batch tier was chosen, which candidate entries
+were dropped and why, which merges were rejected, which contradictions between sources were left
+live and unresolved. Without the reasoning a future session re-litigates the same decisions.
+
+---
+
+## [{{DATE_TODAY}}] maintenance | Wiki initialised from the LLM wiki starter kit
+
+Scaffolded the project skeleton, resolved the schema tokens for this domain, installed the
+librarian schema plus the four specialist agents, and built the first search index with
+`{{SEARCH_CMD}} update`.
+
+No sources ingested yet. Next step is a pilot ingest of one short source end to end — then read
+the output against the page schemas, tune the schema where the domain does not fit, and only
+then start batching.
+
+Wiki state after this session:
+
+- {{ENTRY_NOUN_PLURAL}}: 0
+- Topics: 0
+- Sources: 0

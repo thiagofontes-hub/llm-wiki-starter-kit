@@ -1,0 +1,21 @@
+# {{PROJECT_NAME}} — files git should not track
+
+# Sources already ingested. The wiki plus wiki/sources/ is the durable artefact;
+# these files are kept on disk only so the raw folder shows what is still pending.
+{{PROCESSED_DIR}}/
+
+# Machine-local Claude Code settings (permissions, per-machine MCP overrides).
+# .claude/settings.json IS committed; this file is not.
+.claude/settings.local.json
+
+# Search index and caches. The real index lives outside the project in
+# ~/.cache/{{SEARCH_CMD}}/ and is machine-local, but ignore any in-project
+# variant so a rebuilt index never lands in a commit.
+.{{SEARCH_CMD}}/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# macOS
+.DS_Store
+**/.DS_Store

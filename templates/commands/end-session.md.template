@@ -1,0 +1,200 @@
+<!--
+TEMPLATE: templates/commands/end-session.md.template
+RENDERS TO: .claude/commands/end-session.md
+TOKENS: {{PROJECT_NAME}}, {{PROJECT_ROOT}}, {{LIBRARIAN_ROLE}}, {{ENTRY_DIR}}, {{ENTRY_NOUN_PLURAL}}, {{SOURCE_DIR}}, {{SEARCH_CMD}}
+Delete this comment block when instantiating.
+-->
+
+# /end-session — {{PROJECT_NAME}} session close
+
+Closes a working session cleanly: flags unfinished work, records state, re-indexes search, writes the log and handover, and commits. Run it at the end of every session, before context gets tight — not after.
+
+All paths below are relative to `{{PROJECT_ROOT}}`. Work through the steps in order and do not skip any. If a step fails, stop and tell the owner rather than continuing.
+
+---
+
+## Step 1 — Uncommitted work and unfinished ingestion
+
+```sh
+git branch --show-current
+git status --short
+git log --oneline -3
+```
+
+Then check whether a Phase 5 integration was left half-done. These three checks catch the common failures:
+
+```sh
+# Entries on disk that no index row points at
+for f in wiki/{{ENTRY_DIR}}/*.md; do
+  s=$(basename "$f" .md)
+  grep -qF "$s" wiki/index.md || echo "NOT IN INDEX: $s"
+done
+
+# Sources summarised in the wiki but never moved out of the raw folder
+grep -h '^source_file:' wiki/sources/*.md \
+  | sed 's/^source_file: *"\{0,1\}//; s/"\{0,1\}$//' \
+  | while read -r p; do [ -e "$p" ] && echo "STILL UNMOVED: $p"; done
+
+# Does the log already mention today?
+grep -c "^## \[$(date +%Y-%m-%d)\]" wiki/log.md
+```
+
+If any check reports a problem, or entries were written this session without the index, log, hubs and moves all being done, then the handover you write in Step 6 **must open with a warning block before any other section**:
+
+```markdown
+## WARNING — INCOMPLETE INGESTION
+
+Session N wrote <N> {{ENTRY_NOUN_PLURAL}} but did not finish Phase 5. Outstanding:
+
+- [ ] index.md rows for: <slugs>
+- [ ] log.md entry
+- [ ] topic hubs to wire: <hubs>
+- [ ] originals to move to the processed folder: <files>
+
+The next session must finish this before starting anything else.
+```
+
+Entries that exist with nothing pointing at them are worse than an ingest that never happened. Surfacing this is the single most important thing this command does.
+
+---
+
+## Step 2 — Count current wiki state
+
+Run these together:
+
+```sh
+find "wiki/{{ENTRY_DIR}}" -name "*.md" | wc -l
+find "wiki/sources" -name "*.md" | wc -l
+find "wiki/topics" -name "*.md" | wc -l
+find "{{SOURCE_DIR}}" -name "*.md" | wc -l
+```
+
+The four numbers are {{ENTRY_NOUN_PLURAL}}, source summaries, topic hubs and sources still awaiting ingestion. Reuse the same numbers in the log entry, the handover and the report — they must not disagree.
+
+---
+
+## Step 3 — Determine the session number
+
+```sh
+grep "^## \[" wiki/log.md | head -5
+```
+
+Take the highest session number in those recent entries and add one. If the log carries no session number yet, this is session 1.
+
+---
+
+## Step 4 — Re-index search
+
+```sh
+{{SEARCH_CMD}} update
+{{SEARCH_CMD}} status
+```
+
+`update` takes seconds. If `status` reports pending embeddings and files were written this session, run `{{SEARCH_CMD}} embed` — a few hundred files take 10–20 minutes on Apple Silicon, and the model is a large one-off download on first use. If there is no time, skip it and record in the handover that embedding is **overdue**: keyword search will work, semantic search will miss the new pages until it runs.
+
+---
+
+## Step 5 — Prepend the log entry
+
+`wiki/log.md` is append-at-top. Insert the new entry immediately after the file header, above the most recent existing entry. Never append at the bottom and never edit a past entry.
+
+```markdown
+## [YYYY-MM-DD] ingest | <short description> (session N)
+
+Batch tier: <Short / Medium / Long> — <why>.
+
+Sources ingested:
+- `<filename>` → [[entry-slug]], [[entry-slug]]
+- `<filename>` → 0 entries — <reason>
+
+Decisions and reasoning:
+- <entries dropped or reinforced instead of created, and why>
+- <merges considered and rejected>
+- <tensions flagged and left unresolved, naming both entries>
+
+Topic hubs updated: <hubs>
+Search operations: `{{SEARCH_CMD}} update`; `{{SEARCH_CMD}} embed` <ran / not run>
+```
+
+Use `date +%Y-%m-%d` for the date rather than guessing it. The type is one of `ingest`, `query`, `lint`, `maintenance` — a session with no ingest still gets an entry. Record the reasoning, not just the result: without it a future session re-litigates decisions this one already settled.
+
+---
+
+## Step 6 — Rewrite `.claude/handover.md`
+
+Rewrite the file in full, keeping the section order it already has. Pull the facts from this conversation, the counts from Step 2 and the session number from Step 3.
+
+| Section | Treatment |
+| --- | --- |
+| Incomplete-ingestion warning | Only if Step 1 found one — first section in the file |
+| Immediate next task | Rewrite. One specific sentence, naming the task. Not "continue ingesting" |
+| What was done this session | Rewrite from conversation context |
+| Current wiki state | Rewrite with the Step 2 counts |
+| Search index checklist | Rewrite the list of files added this session that still need embedding |
+| Sources not yet processed / next batch | Rewrite — shortest first, using `scripts/unprocessed.sh` if present |
+| Conventions, gotchas, key files | Copy verbatim from the previous handover. Stable reference material |
+
+The next session reads this file before doing anything else. Write it for a reader with no memory of today.
+
+---
+
+## Step 7 — Stage and commit
+
+```sh
+git add -A
+git status --short
+```
+
+Review what is staged before committing. Then:
+
+```sh
+git commit -m "$(cat <<'EOF'
+chore(session N): <brief summary>
+
+- <N> new {{ENTRY_NOUN_PLURAL}} from <N> sources
+- topic hubs updated: <hubs>
+- <any infrastructure or schema change>
+EOF
+)"
+```
+
+Describe what changed, not that a session ended. "session close" alone is not a commit message.
+
+---
+
+## Step 8 — Ask before pushing
+
+Never push without asking, and never push from a branch you did not expect.
+
+```sh
+git branch --show-current
+git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo "no upstream"
+```
+
+- Empty branch name means a detached HEAD. **Stop.** Do not push. Tell the owner and let them sort out the checkout.
+- A branch other than the project's usual one, or no upstream: stop and ask which remote and branch to use.
+- Otherwise ask the owner plainly whether to push. Only on a yes: `git push`.
+- If the push is rejected because the remote has diverged, report it and ask before running `git pull --rebase` — do not rebase unprompted.
+
+---
+
+## Step 9 — Report to the owner
+
+Close with a short report:
+
+- Commit hash — `git log --oneline -1`.
+- The four counts from Step 2.
+- Whether the push happened, or that it is waiting on approval.
+- Whether `{{SEARCH_CMD}} embed` is overdue.
+- **What the next session should start with** — one specific sentence, matching the handover's immediate-next-task line exactly.
+
+If Step 1 found an incomplete ingestion, say so again here. It is the last thing the owner should read.
+
+---
+
+## Rules
+
+- Run this before context runs low. A session that ends without it loses its own state.
+- Ask before pushing. Never push from a detached HEAD or an unexpected branch.
+- Never rewrite or reorder existing `log.md` entries.
+- The {{LIBRARIAN_ROLE}} runs this command. Do not delegate any step of it to a sub-agent — every step touches shared state.

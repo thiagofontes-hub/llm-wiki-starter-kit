@@ -1,0 +1,53 @@
+<!--
+TEMPLATE: templates/pages/entry.md.template
+RENDERS TO: wiki/{{ENTRY_DIR}}/<slug>.md — one file per {{ENTRY_NOUN}}
+TOKENS: {{ENTRY_NOUN}}, {{ENTRY_NOUN_PLURAL}}, {{ENTRY_DIR}}, {{ATOMICITY_RULE}}
+Skeleton for hand-creating a single entry. A normal ingest writes these through the wiki-writer
+agent instead; use this when adding a page outside an ingest, or as the format reference.
+Copy the file, then delete this comment block — the `---` must be the first line of the finished
+page, or the frontmatter will not parse.
+-->
+---
+title: "[Entry name in title case — name the thing, do not write a sentence]"
+tags: [tag-one, tag-two]
+sources: ["[[source-slug]]"]
+related: ["[[other-entry]]", "[[another-entry]]"]
+---
+
+[Opening: 1–2 sentences that state the idea itself, so the reader has the whole point from the
+first line. Not "This {{ENTRY_NOUN}} describes..." and not "The idea of X is important".]
+
+[Middle: 4–12 lines total. Use structure only where the content genuinely has that shape —
+**bold** for the named parts of a framework or for two things being distinguished, a bullet list
+for three or more parallel items, a table when there are two dimensions to compare. A single
+clean paragraph is the right answer when the idea has no enumerable parts. Wikilink the first
+mention of any [[other-entry]] you name.]
+
+[Optional last line: the rule of thumb, stated once, in the plainest possible words.]
+
+## Related {{ENTRY_NOUN_PLURAL}}
+
+- [[other-entry]] — [one sentence on how the two relate, not the title restated]
+- [[another-entry]] — [what this one adds, or where it disagrees]
+
+<!--
+RULES FOR THIS PAGE TYPE
+
+- Atomicity: exactly one idea per file. {{ATOMICITY_RULE}} If you cannot state the idea in one
+  sentence, it is two entries. Never merge unrelated near-duplicates into a grab-bag page.
+- Opening sentence: leads with the idea. No "This {{ENTRY_NOUN}}...", no preamble, no throat-clearing.
+- Length: 4–12 lines of body, excluding the Related section. Self-contained, not a treatise.
+- Wikilinks: link the first mention of a related entry in the body. Every slug used must already
+  exist in `wiki/index.md`. Never invent a plausible-looking slug.
+- Related section: 2–5 bullets, drawn only from the `related:` frontmatter of this page. If
+  `related:` is empty, omit the section entirely rather than filling it with guesses.
+- Provenance: `sources:` lists every source page this entry draws on and is never emptied. When a
+  later source reinforces the entry, add it here and record the reinforcement on that source page.
+- Field names are fixed: `title`, `tags`, `sources`, `related`. `source:` singular is drift and
+  breaks queries. Reuse existing tags rather than coining one for a single page.
+- Heading wording: with the default entry noun this renders as `## Related concepts`. Whatever
+  wording you settle on, keep it identical across every entry, the formatter agent and
+  `docs/03-page-schemas.md`.
+
+Full schema reference: docs/03-page-schemas.md. Worked example: examples/example-entry.md.
+-->

@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "{{SEARCH_CMD}}": {
+      "command": "{{SEARCH_CMD}}",
+      "args": ["mcp"]
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Bash({{SEARCH_CMD}} status)",
+      "Bash({{SEARCH_CMD}} update)",
+      "Bash({{SEARCH_CMD}} search:*)",
+      "Bash({{SEARCH_CMD}} query:*)",
+      "Bash({{SEARCH_CMD}} vsearch:*)",
+      "Bash({{SEARCH_CMD}} get:*)",
+      "Bash(wc:*)"
+    ]
+  }
+}

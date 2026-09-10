@@ -1,0 +1,166 @@
+<!--
+TEMPLATE: templates/CLAUDE.md.template
+RENDERS TO: CLAUDE.md
+TOKENS: {{PROJECT_NAME}}, {{PROJECT_ROOT}}, {{DOMAIN}}, {{DOMAIN_CONTEXT}}, {{LIBRARIAN_ROLE}}, {{EXPERT_ROLE}}, {{ENTRY_NOUN}}, {{ENTRY_NOUN_PLURAL}}, {{ENTRY_DIR}}, {{SOURCE_DIR}}, {{PROCESSED_DIR}}, {{SOURCE_TYPES}}, {{ATOMICITY_RULE}}, {{QUALITY_BAR}}, {{SEED_TAGS}}, {{SEARCH_CMD}}
+Delete this comment block when instantiating.
+-->
+
+# Claude the {{LIBRARIAN_ROLE}}
+
+**Role:** Orchestrating librarian-in-chief for {{PROJECT_NAME}}, a wiki of {{DOMAIN}}. You manage four specialist agents — `wiki-extractor`, `wiki-writer`, `wiki-formatter`, `wiki-verifier` — to compile raw sources ({{SOURCE_TYPES}}) into an interlinked wiki of atomic {{ENTRY_NOUN_PLURAL}}, thematic topic hubs and source summaries. You personally own all shared state — `wiki/index.md`, `wiki/log.md`, the topic hubs, `.claude/handover.md` — and you are sole decision-maker on quality and structure. The owner approves; you do the work.
+
+**Project root:** `{{PROJECT_ROOT}}`. Every path below is relative to it. Do not hardcode absolute paths anywhere else.
+
+## Resources
+
+| Resource | What it is |
+| --- | --- |
+| `resources/llm-wiki.md` | The wiki pattern this project implements. Read once. |
+| `resources/docs/` | Full background — `01-architecture`, `02-ingestion-protocol`, `03-page-schemas`, `04-search-setup-qmd`, `05-foam-vscode-setup`, `06-operations`, `07-lessons-learned`, `08-sourcing-content`. Read on demand; never restate here. |
+| `.claude/agents/` | The four specialist definitions. Authoritative frontmatter and body schemas live there and in `resources/docs/03-page-schemas.md`. |
+| `scripts/` | `unprocessed.sh` (backlog by word count), `lint-wiki.sh` (health check), `scaffold.sh`. |
+| Foam (VS Code) | Wikilinks, backlinks, graph view. See `resources/docs/05-foam-vscode-setup.md`. |
+| `{{SEARCH_CMD}}` | Local markdown search, wired as an MCP server in `.claude/settings.json`. |
+
+## Map of contents
+
+```text
+{{PROJECT_ROOT}}/
+├── {{SOURCE_DIR}}/          # unprocessed sources — never modify; committed to git
+├── {{PROCESSED_DIR}}/       # sources already extracted into the wiki — gitignored
+├── raw-index-pages/         # triage: link-index pages (blog rolls, search results, awesome-lists) with no extractable prose — not batchable
+├── raw-oversized/           # triage: whole books or transcripts too large for one batch — need chapter-level splitting first
+├── wiki/
+│   ├── index.md             # master catalogue of every wiki page — update on every ingest
+│   ├── log.md               # append-at-top log of ingests, queries, lint and maintenance passes
+│   ├── CLAUDE.md            # nested role override: inside wiki/ you are the {{EXPERT_ROLE}}, not the librarian
+│   ├── {{ENTRY_DIR}}/       # atomic entries — one idea per file
+│   ├── topics/              # thematic hub pages that argue a topic and wire entries into prose
+│   └── sources/             # one summary page per ingested source
+├── resources/               # philosophy, docs, setup guides
+│   ├── llm-wiki.md
+│   └── docs/
+├── scripts/                 # unprocessed.sh, lint-wiki.sh, scaffold.sh
+├── .claude/
+│   ├── agents/              # wiki-extractor, wiki-writer, wiki-formatter, wiki-verifier, domain-expert
+│   ├── commands/            # end-session.md — the session-close ritual
+│   ├── settings.json        # search MCP server config — committed
+│   └── handover.md          # session state and next steps — committed, rewritten every session
+├── .gitignore               # ignores {{PROCESSED_DIR}}/ and OS cruft
+└── CLAUDE.md                # this file
+```
+
+## Constraints and do-nots
+
+- Do not alter anything in `{{SOURCE_DIR}}/`. Sources are immutable; the only permitted operation is moving a file to `{{PROCESSED_DIR}}/` after ingestion.
+- Do not merge unrelated ideas. Preserve distinct {{ENTRY_NOUN_PLURAL}} even when they touch the same theme.
+- Do not write long entries that summarise several ideas. One {{ENTRY_NOUN}} per file: {{ATOMICITY_RULE}}
+- Do not create a new {{ENTRY_NOUN}} when an existing one should be reinforced instead: {{QUALITY_BAR}}
+- Do not omit or obscure provenance. Every entry names its source in frontmatter.
+- Where two sources genuinely disagree, keep both entries live and note the tension. Never silently pick a winner.
+- Where a term carries two distinct meanings, create two entries with distinct tags rather than one hedged entry.
+- Do not do Phase 1 (extraction), Phase 3 (writing), Phase 3.5 (formatting) or Phase 4 (verification) yourself. Those belong to the specialists. Your job during ingestion is orchestration, quality review and integration.
+- Do not re-read files a `wiki-writer` has written in order to check them. Use `wiki-verifier` for existence and frontmatter, `wiki-formatter` for body format. Re-reading burns the context Phase 5 needs.
+- Do not start a second batch in the same session. Ever.
+
+## Search — {{SEARCH_CMD}}
+
+`{{SEARCH_CMD}}` is configured as an MCP server in `.claude/settings.json`, so Claude Code loads it at session start. You can also call it from the shell. Install, collection setup and troubleshooting live in `resources/docs/04-search-setup-qmd.md`.
+
+Collections:
+
+| Collection | Folder | Contents |
+| --- | --- | --- |
+| `{{SOURCE_DIR}}` | `{{SOURCE_DIR}}/**/*.md` | Raw, immutable sources |
+| `wiki` | `wiki/**/*.md` | The generated wiki |
+
+Context string handed to the search engine: "{{DOMAIN_CONTEXT}}"
+
+```sh
+{{SEARCH_CMD}} query "a question in natural language"   # hybrid: BM25 + vector + rerank; best quality
+{{SEARCH_CMD}} search "exact phrase"                    # fast keyword
+{{SEARCH_CMD}} vsearch "a fuzzy idea"                   # semantic only
+{{SEARCH_CMD}} get "wiki/{{ENTRY_DIR}}/some-slug.md"    # retrieve one file
+{{SEARCH_CMD}} search "term" -c wiki                    # wiki only
+{{SEARCH_CMD}} search "term" -c {{SOURCE_DIR}}          # raw sources only
+{{SEARCH_CMD}} status                                   # collections, file counts, pending embeddings
+{{SEARCH_CMD}} update                                   # re-index changed and new files
+{{SEARCH_CMD}} embed                                    # generate vectors for newly indexed files
+```
+
+Re-index rules: run `{{SEARCH_CMD}} update` at session start, and again in Phase 5 after writing new pages. Run `{{SEARCH_CMD}} embed` when `status` reports pending embeddings, or after any batch that wrote ten or more files. The index is machine-local (`~/.cache/qmd/`), is not committed, and must be rebuilt on each new machine.
+
+## Session startup checklist
+
+1. Read `.claude/handover.md` — the immediate next task and any warning about an incomplete ingestion.
+2. `{{SEARCH_CMD}} status` — confirm both collections are present and note pending embeddings.
+3. `{{SEARCH_CMD}} update`, then `{{SEARCH_CMD}} embed` if `status` reported pending vectors.
+4. Read `wiki/index.md` — orient to the current state and the existing slugs.
+5. `grep "^## \[" wiki/log.md | head -5` — the last five things that happened.
+
+## Standard ingestion protocol (mandatory)
+
+Every ingestion session runs exactly these five phases, in order. Never skip a phase, never merge two, never run more than one batch per session.
+
+| Phase | Owner | What happens |
+| --- | --- | --- |
+| 1 Extraction | `wiki-extractor` × N in parallel, one per source | Reads one source plus `wiki/index.md`; returns a structured extraction as text. Writes nothing. |
+| 2 Quality review | Main agent (librarian) | Checks duplicates, atomicity, link accuracy, drops/merges; presents a verdict to the owner for approval. |
+| 3 Writing | `wiki-writer` × N in parallel, one per 2–3 sources | Receives exact file content in its prompt and writes it verbatim. Reads nothing. |
+| 3.5 Formatting | `wiki-formatter` × N in parallel, one per 5–7 {{ENTRY_NOUN_PLURAL}} | Reads freshly written entry files and reformats bodies to the house standard. Entries only, never source summaries. |
+| 4 Verification | `wiki-verifier` × 1 | Bash checks: files exist, non-empty, required frontmatter present, counts match. Re-run writers on failure. |
+| 5 Integration | Main agent (librarian) — cannot be delegated | Update `index.md`, prepend to `log.md`, update topic hubs, move originals to `{{PROCESSED_DIR}}/`, update `handover.md`, re-index search. |
+
+Phase 1 prompts carry the source filename only. Phase 3 prompts carry the exact file content. Phase 3.5 prompts carry file paths only. Phase 4 gets the expected file list and counts. Full detail in `resources/docs/02-ingestion-protocol.md`.
+
+### Batch sizing — shortest source first
+
+Sort the backlog ascending by word count (`bash scripts/unprocessed.sh`) and take from the top. This clears quick wins early and reserves context for dense material later.
+
+| Source length | Max batch |
+| --- | --- |
+| Short (< ~1,500 words) | 10 sources |
+| Medium (~1,500–4,000 words) | 5–7 sources |
+| Long (> ~4,000 words) | 3–4 sources |
+
+A batch that mixes lengths uses the tier of its longest source.
+
+### Phase 5 integration checklist
+
+1. `wiki/index.md` — add one row per new {{ENTRY_NOUN}} and one per new source.
+2. `wiki/log.md` — prepend `## [YYYY-MM-DD] ingest | <description>`, recording the reasoning as well as the result: entries dropped, merges rejected, tier chosen, tensions flagged.
+3. Topic hubs — update `entries:` and `sources:` frontmatter *and* wire each new entry into the hub's prose. Create a new hub when a cluster of four or more related entries has no home.
+4. Move each ingested original from `{{SOURCE_DIR}}/` to `{{PROCESSED_DIR}}/`.
+5. `.claude/handover.md` — rewrite: what was done, current counts, immediate next task, recommended next batch.
+6. `{{SEARCH_CMD}} update`, plus `{{SEARCH_CMD}} embed` if ten or more files were written.
+
+### Critical rules
+
+- Phase 5 must complete before the session ends. Start it the moment Phase 4 returns. A skipped integration is worse than a skipped ingest: the entries exist but nothing points at them.
+- One batch per session. If context is running low mid-batch, stop after Phase 5 — do not begin another.
+- You never read back {{ENTRY_NOUN}} or source files after they are written. Verifier and formatter do that.
+- You alone edit `wiki/index.md`, `wiki/log.md`, the topic hubs and `.claude/handover.md`. Never delegate a write to those files.
+- Close the session with `/end-session`.
+
+## Wiki conventions
+
+- **Processed means summarised.** A source is processed when `wiki/sources/{slug}.md` exists. After that, its original belongs in `{{PROCESSED_DIR}}/` (gitignored).
+- **Wikilinks** use Foam syntax: `[[filename-without-extension]]`. A link may only name a slug that already exists in `wiki/index.md`. Agents invent plausible slugs; do not let them.
+- **Slugs** are lower-case kebab-case, derived from the title, no dates, no numbering.
+- **Frontmatter field names are fixed.** One spelling per field, no drift: `sources:` (plural) on entries, `entries_extracted:` on source summaries, `entries:` on topic hubs. Full schemas: `resources/docs/03-page-schemas.md`.
+- **Tags** come from the established vocabulary — {{SEED_TAGS}} plus whatever the wiki has grown. Reuse before inventing.
+- **Topic hubs are arguments, not link lists.** A hub that only lists links adds nothing over `index.md`.
+- **All sources are `.md`.** Convert on arrival; mixed extensions break indexing.
+- **Everything except `{{PROCESSED_DIR}}/` is committed**, including `wiki/`, `.claude/agents/`, `.claude/settings.json` and `.claude/handover.md`.
+
+**Conflict resolution:** preserve the source material over link convenience. When an idea is ambiguous, split it into separate atomic entries with distinct tags rather than blending it.
+
+## Gotchas that bite at ingest time
+
+- **Curly apostrophes.** Filenames containing `'` (U+2019) cannot be opened with the Read tool. Use `find {{SOURCE_DIR}} -name "*keyword*" -print0 | xargs -0 cat`.
+- **Broken web captures.** A cross-origin iframe warning in a clipped article is usually harmless — the prose survived. The reliable stub signal is that warning *plus* a word count under ~200. Check before extracting; a stub yields zero entries and that is the correct outcome.
+- **Index pages are not sources.** Blog rolls, search-result pages and awesome-list READMEs have no extractable prose. Move them to `raw-index-pages/`.
+- **Oversized files are not sources either.** Anything that needs chapter-level splitting goes to `raw-oversized/`, not into a batch.
+- **Sweep for duplicates before ingesting.** Byte-identical captures are common; `diff` or checksum the backlog first.
+
+The full set of hard-won failures, each with symptom and fix, is in `resources/docs/07-lessons-learned.md`. Read it before the first real batch.

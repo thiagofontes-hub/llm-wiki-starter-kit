@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# Claude Code machine-local settings
+.claude/settings.local.json

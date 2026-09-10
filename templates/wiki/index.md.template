@@ -1,0 +1,49 @@
+<!--
+TEMPLATE: templates/wiki/index.md.template
+RENDERS TO: wiki/index.md
+TOKENS: {{PROJECT_NAME}}, {{DOMAIN}}, {{ENTRY_NOUN_PLURAL}}, {{ENTRY_DIR}}
+Capitalise {{ENTRY_NOUN_PLURAL}} where it is substituted into a heading. This renders to a valid,
+empty index on day one: keep the three tables and their header rows, and leave the commented
+example rows in place until real rows exist.
+Delete this comment block when instantiating.
+-->
+
+# {{PROJECT_NAME}} wiki index
+
+Master catalogue of every page in this wiki, covering {{DOMAIN}}. The librarian updates it in
+Phase 5 of every ingest: one row per new page, appended to the bottom of its table. A page that
+is not listed here is invisible to the extractor and will be duplicated.
+
+## Meta
+
+| File | Description |
+|------|-------------|
+| [index.md](index.md) | This file — catalogue of all wiki pages |
+| [log.md](log.md) | Append-at-top log of ingests, queries, lint passes and maintenance |
+| Counts | 0 {{ENTRY_NOUN_PLURAL}} · 0 topics · 0 sources — updated in Phase 5 of every ingest |
+
+## {{ENTRY_NOUN_PLURAL}}
+
+_Atomic entries — one idea per page._
+
+| File | Description |
+|------|-------------|
+<!-- Example row; replace with real rows as pages are created:
+| [example-slug]({{ENTRY_DIR}}/example-slug.md) | One line stating the idea, not the title restated |
+-->
+
+## Topics
+
+_Thematic hub pages that argue a theme and wire the relevant entries into it._
+
+| File | Description |
+|------|-------------|
+<!-- | [example-topic](topics/example-topic.md) | What this hub argues and which cluster of entries it pulls together | -->
+
+## Sources
+
+_One summary page per ingested source. A source counts as processed when its page exists here._
+
+| File | Description |
+|------|-------------|
+<!-- | [example-source](sources/example-source.md) | Original title — source type — what it contributed | -->
